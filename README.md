@@ -6,12 +6,16 @@
    - they are significantly faster because they use special CPU instructions to coordinate threads.
    - block the thread for an incredibly short period of time.     
    Cons:
-   - Windows operating system never detects that a thread is blocked the thread pool will not create a new thread to replace the temporarily blocked thread
+   - Windows operating system never detects that a thread is blocked the thread pool will not create a new thread to replace the temporarily blocked thread    
+   Samples: Interlocked, volotile
 2. kernel-mode    
    Pros:
    - when resource is using by another thread it can block the thread which want to get the access, so that it is no longer wasting CPU time.      
    Cons:
    - they are slower because they use the operating system kernel(Having threads transition from user mode to kernel mode and back incurs a big performance hit).
+   Samples: Semaphore, Mutex
+3. Hybrid
+   Samples: SemaphoreSlim, lock/Monitor
    
 **livelock** - if thread blocking using a user-mode construct and the thread is running on a CPU forever;    
 **deadlock** - if thread blocking using a kernel-mode construct, the thread is blocked forever.
@@ -25,7 +29,9 @@ There are two kinds of primitive user-mode thread synchronization constructs:
 
 #### Monitor/lock
 Monitor.Enter is not a normal .NET method (can't be decompiled with ILSpy or similar). The method is implemented internally by the CLR, so strictly speaking, there is no one answer for .NET as different runtimes can have different implementations.     
-All objects in .NET have an object header containing a pointer to the type of the object, but also an SyncBlock index into a SyncTableEntry. Normally that index is zero/non used, but when you lock on the object it will contain an index into the SyncTableEntry which then contains the reference to the actual lock object.
+All objects in .NET have an object header containing a pointer to the type of the object, but also an SyncBlock index into a SyncTableEntry. Normally that index is zero/non used, but when you lock on the object it will contain an index into the SyncTableEntry which then contains the reference to the actual lock object.    
+
+Во время инициализации CLR выделяется массив блоков синхронизации. Как уже не раз упоминалось в этой книге, при создании объекта в куче с ним связываются два дополнительных служебных поля. Первое поле — указатель на объект-тип — содержит адрес этого объекта в памяти. Второе поле содержит индекс блока синхронизации (sync block index), то есть индекс в массиве таких блоков. В момент конструирования объекта этому индексу присваивается значение –1, что означает отсутствие ссылок на блок синхронизации. Затем при вызове метода Monitor.Enter CLR обнаруживает в массиве свободный блок синхронизации и присваивает ссылку на него объекту. То есть привязка объекта к блоку синхронизации происходит «на лету». Метод Exit проверяет наличие потоков, ожидающих блока синхронизации. Если таких потоков не обнаруживается, метод возвращает индексу значение –1, означающее, что блоки синхронизации свободны и могут быть связаны с какими-нибудь другими объектами.
 
 #### Mutexes
 **Mutex** is a synchronization primitive that grants exclusive access to the shared resource to only one thread. If a thread acquires a mutex, the second thread that wants to acquire that mutex is suspended until the first thread releases the mutex.      
