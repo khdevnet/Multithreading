@@ -1,7 +1,7 @@
 Primitive Thread Synchronization Constructs
 
 There are two kinds of primitive constructs:
-1. user-mode 
+1. user-mode      
    Pros:
    - they are significantly faster because they use special CPU instructions to coordinate threads.
    - block the thread for an incredibly short period of time.     
